@@ -19,6 +19,21 @@ let unitY = simd_float4(0,1,0,0)
 let unitZ = simd_float4(0,0,1,0)
 let zeroVector = simd_float4(0,0,0,1)
 
+var condoModel:Model? = nil
+let modelInfo =  ModelInfo(
+    modelOriginSketchupCM: simd_float3(437.8325,736.6,0),
+    entryPoints: [
+        EntryPointInfo(
+            entryPointSketchupCM: simd_float3(0,0,0),
+            cornerNormalAlignment: [true,true,false]
+        ),
+        EntryPointInfo(
+            entryPointSketchupCM: simd_float3(875.665,1229.995,0),
+            cornerNormalAlignment: [false,true,true]
+        ),
+    ]
+)
+
 struct ContentView : View {
     @State private var isPlacementEnabled = false
     @State private var selectedModel: Model?
@@ -38,6 +53,10 @@ struct ContentView : View {
             
             let model = Model(modelName: modelName)
             availableModels.append(model)
+            
+            if(modelName == "condo") {
+                condoModel = model
+            }
         }
         
         return availableModels
@@ -162,10 +181,30 @@ struct ARViewContainer: UIViewRepresentable {
 //                }
             }
             else if model.modelName == "condo" {
-                placeModel(view: uiView, model: model)
+                guard let modelToPlace = condoModel else {
+                    print("Condo model does not exist!");
+                    return;
+                }
+                
+                let entryPointInfo = modelInfo.entryPoints[0];
+                placeModel(
+                    view: uiView,
+                    model: modelToPlace,
+                    modelInfo: modelInfo,
+                    entryPointInfo: entryPointInfo)
             }
-            else if model.modelName == "toy_robot_vintage" {
-                placeModel(view: uiView, model: model)
+            else if model.modelName == "fender_stratocaster" {
+                guard let modelToPlace = condoModel else {
+                    print("Condo model does not exist!");
+                    return;
+                }
+                
+                let entryPointInfo = modelInfo.entryPoints[1];
+                placeModel(
+                    view: uiView,
+                    model: modelToPlace,
+                    modelInfo: modelInfo,
+                    entryPointInfo: entryPointInfo)
             }
             else  {
                 //just place the model if it is not one of the first two
@@ -231,11 +270,32 @@ struct ARViewContainer: UIViewRepresentable {
         
         anchorEntity.addChild(modelEntity)
         view.scene.addAnchor(anchorEntity)
+        //anchorEntities.append(anchorEntity)
     }
     
-    func placeModel(view: ARView, model: Model) {
-        let modelEntity = model.modelEntity!
-        let transform = self.createObjectTransform()
+    func placeModel(view: ARView,
+                    model: Model,
+                    modelInfo: ModelInfo,
+                    entryPointInfo: EntryPointInfo) {
+        
+        if(detectedPlanes.count != 3) {
+            print("three planes not found! found \(detectedPlanes.count)")
+//            for planeAnchor in detectedPlanes.values {
+//                view.scene.removeAnchor(planeAnchor)
+//            }
+//            detectedPlanes = [UUID:ARPlaneAnchor]()
+            return;
+        }
+        
+        guard let modelEntity = model.modelEntity else {
+            print("Condo model not loaded!");
+            return;
+        }
+        
+        let transform = self.createObjectTransform(
+            modelInfo: modelInfo,
+            entryPointInfo: entryPointInfo)
+        
         print("new transform: \(transform)")
         let anchorEntity = AnchorEntity(world: transform)
         anchorEntity.addChild(modelEntity)
@@ -243,10 +303,8 @@ struct ARViewContainer: UIViewRepresentable {
     
     }
     
-    func createObjectTransform() -> simd_float4x4 {
-        if(detectedPlanes.count != 3) {
-            print("three planes not found!")
-        }
+    func createObjectTransform(modelInfo: ModelInfo, entryPointInfo:EntryPointInfo) -> simd_float4x4 {
+        let cornerNormalAlignment = entryPointInfo.cornerNormalAlignment;
         
         var planeInfoArray = [PlaneInfo]()
         
@@ -313,7 +371,7 @@ struct ARViewContainer: UIViewRepresentable {
             //let zProj = simd_dot(unitY,planeInfo.worldNormal)
             
             //we expect this to be very close to 1, but we will use > .9
-            if(yProj > 0.9) {
+            if((yProj > 0.9)||(yProj < -0.9)) {
                 if(yIndex == -1) {
                     yIndex = index
                 }
@@ -338,15 +396,31 @@ struct ARViewContainer: UIViewRepresentable {
         }
         
         let det = simd_float4x4(
-            planeInfoArray[0].worldNormal,
-            planeInfoArray[1].worldNormal,
-            planeInfoArray[2].worldNormal,
+            planeInfoArray[xIndex].worldNormal,
+            planeInfoArray[yIndex].worldNormal,
+            planeInfoArray[zIndex].worldNormal,
             zeroVector
         ).determinant
+        
+        //==============
+        //get the expected determinant based on cube normals versus coordinate system
+        var isPositive = true
+        if(!cornerNormalAlignment[0]) {
+            isPositive = !isPositive
+        }
+        if(!cornerNormalAlignment[1]) {
+            isPositive = !isPositive
+        }
+        if(!cornerNormalAlignment[2]) {
+            isPositive = !isPositive
+        }
+        //=================
+            
+            
         print("determninant: \(det)")
         
         //if the determinant is negative we guessed wrong for x and z
-        if(det < 0) {
+        if (det > 0) != isPositive {
             swap(&xIndex,&zIndex)
         }
         
@@ -358,15 +432,26 @@ struct ARViewContainer: UIViewRepresentable {
         //tke y to be the y unit vector -
         let yNormal = unitY;
         
-        let xNormal = projectOut(inputVector: planeInfoArray[xIndex].worldNormal, projectOut: yNormal)
-        let zNormalTemp = projectOut(inputVector: planeInfoArray[zIndex].worldNormal, projectOut: yNormal)
-        let zNormal = projectOut(inputVector: zNormalTemp, projectOut: xNormal)
+        var initialX = planeInfoArray[xIndex].worldNormal
+        if(!cornerNormalAlignment[0]) {
+            initialX = getVectorNegative(initialX)
+        }
+        let xNormal = projectOut(inputVector: initialX, projectOut: yNormal)
+            
+        var initialZ = planeInfoArray[zIndex].worldNormal
+        if(!cornerNormalAlignment[2]) {
+            initialZ = getVectorNegative(initialZ)
+        }
+        initialZ = projectOut(inputVector: initialZ, projectOut: yNormal)
+        let zNormal = projectOut(inputVector: initialZ, projectOut: xNormal)
         
         print("local y unit vector: \(yNormal)")
         print("local x unit vector: \(xNormal)")
         print("local z unit vector: \(zNormal)")
         
         let newLocalToWorld = createTransform(
+            modelInfo: modelInfo,
+            entryPointInfo: entryPointInfo,
             xNormal: xNormal,
             yNormal: yNormal,
             zNormal: zNormal,
@@ -387,20 +472,45 @@ struct ARViewContainer: UIViewRepresentable {
         return simd_normalize(unnormalized)
     }
     
-    func createTransform(xNormal: simd_float4, yNormal: simd_float4, zNormal: simd_float4, location: simd_float4) -> simd_float4x4 {
+    func getVectorNegative(_ input:simd_float4) -> simd_float4 {
+        return simd_float4(-input[0],-input[1],-input[2],input[3])
+    }
+    
+    func createTransform(
+        modelInfo: ModelInfo,
+        entryPointInfo: EntryPointInfo,
+        xNormal: simd_float4,
+        yNormal: simd_float4,
+        zNormal: simd_float4,
+        location: simd_float4) -> simd_float4x4 {
+        
+        //================
+        //model parameters
+        //================
+        //the input model is in cm (with conversion I am using)
+        //the axes have been aligned to what is used by arkit
+        
+        let modelOriginLocation = modelInfo.modelOriginSketchupCM
+        let modelEntryPointLocation = entryPointInfo.entryPointSketchupCM
+        
+        //I convert the offset directions (entered as sketchup) to l directions
+        let modelOffset = simd_float4(
+            modelOriginLocation[0] - modelEntryPointLocation[0],
+            modelOriginLocation[2] - modelEntryPointLocation[2],
+            -modelOriginLocation[1] + modelEntryPointLocation[1],
+            1
+        )
         
         //convert from model directions to local directions
-        //model x direction maps to world z
-        //model y direction maps to world x
-        //model z direction maps to world y
-        let modelToLocalDirections = simd_float4x4(
-            unitZ,
+        //assume input model
+        let modelToLocalLocation = simd_float4x4(
             unitX,
             unitY,
-            zeroVector
+            unitZ,
+            modelOffset
         )
-        //convert model scale to local scale: inches to meters
-        let scaleFactor:Float = 0.0254;
+        //local coords is in meters but the usdz is in cm
+        let scaleFactor:Float = 0.01;
         let modelToLocalScale = simd_float4x4(diagonal: simd_float4(scaleFactor,scaleFactor,scaleFactor,Float(1)))
         
         //convert local coordinates to world coordinates
@@ -412,7 +522,7 @@ struct ARViewContainer: UIViewRepresentable {
         )
             
         //chain the transformations
-        return simd_mul(localToWorld,simd_mul(modelToLocalScale,modelToLocalDirections))
+        return simd_mul(localToWorld,simd_mul(modelToLocalScale,modelToLocalLocation))
     }
     
     

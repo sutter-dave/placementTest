@@ -23,6 +23,8 @@
 		37477BF12774F5B40057CEB0 /* toy_car.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BEB2774F5B40057CEB0 /* toy_car.usdz */; };
 		37477BF22774F5B40057CEB0 /* toy_robot_vintage.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BEC2774F5B40057CEB0 /* toy_robot_vintage.usdz */; };
 		37477BF32774F5B40057CEB0 /* toy_biplane.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BED2774F5B40057CEB0 /* toy_biplane.usdz */; };
+		3798D6B127794166008C25BF /* EntryPointInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3798D6B027794166008C25BF /* EntryPointInfo.swift */; };
+		3798D6B327794265008C25BF /* ModelInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3798D6B227794265008C25BF /* ModelInfo.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +64,8 @@
 		37477BEB2774F5B40057CEB0 /* toy_car.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = toy_car.usdz; sourceTree = "<group>"; };
 		37477BEC2774F5B40057CEB0 /* toy_robot_vintage.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = toy_robot_vintage.usdz; sourceTree = "<group>"; };
 		37477BED2774F5B40057CEB0 /* toy_biplane.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = toy_biplane.usdz; sourceTree = "<group>"; };
+		3798D6B027794166008C25BF /* EntryPointInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryPointInfo.swift; sourceTree = "<group>"; };
+		3798D6B227794265008C25BF /* ModelInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelInfo.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +124,8 @@
 				37477BC12774F4E00057CEB0 /* Preview Content */,
 				37477BE52774F53A0057CEB0 /* Model.swift */,
 				370632F727750CBF0009565A /* PlaneInfo.swift */,
+				3798D6B027794166008C25BF /* EntryPointInfo.swift */,
+				3798D6B227794265008C25BF /* ModelInfo.swift */,
 			);
 			path = placementTest;
 			sourceTree = "<group>";
@@ -299,7 +305,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				37477BBC2774F4DE0057CEB0 /* ContentView.swift in Sources */,
+				3798D6B127794166008C25BF /* EntryPointInfo.swift in Sources */,
 				37477BBA2774F4DE0057CEB0 /* AppDelegate.swift in Sources */,
+				3798D6B327794265008C25BF /* ModelInfo.swift in Sources */,
 				37477BBE2774F4DE0057CEB0 /* Experience.rcproject in Sources */,
 				37477BE62774F53A0057CEB0 /* Model.swift in Sources */,
 				370632F827750CBF0009565A /* PlaneInfo.swift in Sources */,
