@@ -8,7 +8,7 @@
 import SwiftUI
 import RealityKit
 import ARKit
-//import SceneKit
+import Combine
 
 var imageSet = false
 var detectedPlanes = [UUID:ARPlaneAnchor]()
@@ -20,25 +20,55 @@ let unitZ = simd_float4(0,0,1,0)
 let zeroVector = simd_float4(0,0,0,1)
 
 var condoModel:Model? = nil
+//let modelInfo =  ModelInfo(
+//    modelOriginSketchupCM: simd_float3(437.8325,736.6,0),
+//    entryPoints: [
+//        EntryPointInfo(
+//            entryPointSketchupCM: simd_float3(0,0,0),
+//            cornerNormalAlignment: [true,true,false]
+//        ),
+//        EntryPointInfo(
+//            entryPointSketchupCM: simd_float3(875.665,1229.995,0),
+//            cornerNormalAlignment: [false,true,true]
+//        ),
+//    ]
+//)
 let modelInfo =  ModelInfo(
-    modelOriginSketchupCM: simd_float3(437.8325,736.6,0),
+    modelOriginSketchupCM: simd_float3(4.378325,7.366,0),
     entryPoints: [
         EntryPointInfo(
             entryPointSketchupCM: simd_float3(0,0,0),
             cornerNormalAlignment: [true,true,false]
         ),
         EntryPointInfo(
-            entryPointSketchupCM: simd_float3(875.665,1229.995,0),
+            entryPointSketchupCM: simd_float3(8.75665,12.29995,0),
             cornerNormalAlignment: [false,true,true]
         ),
     ]
 )
+
+//=========
+var condoAnchorEntity:AnchorEntity? = nil
+//=========
+
+var externalScenes = [String:Entity]()
+
+var externalLoading = [String:Combine.AnyCancellable]()
 
 struct ContentView : View {
     @State private var isPlacementEnabled = false
     @State private var selectedModel: Model?
     @State private var modelConfirmedForPlacement: Model?
     @State private var parentAnchorForAddition: ARAnchor? = nil
+    
+    init() {
+        //christmasScene = try! Christmas.loadChristmasScene()
+        loadUnanchoredScene(
+            fileName: "Christmas",
+            fileExtension: ".rcproject",
+            sceneName: "ChristmasScene"
+        )
+    }
     
     var models: [Model] = {
         let fileManager = FileManager.default
@@ -206,6 +236,19 @@ struct ARViewContainer: UIViewRepresentable {
                     modelInfo: modelInfo,
                     entryPointInfo: entryPointInfo)
             }
+            else if model.modelName == "toy_biplane" {
+                guard let entity = externalScenes["ChristmasScene"] else {
+                    print("Christmas scene not loaded!");
+                    return
+                }
+                
+                guard let baseAnchorEntity = condoAnchorEntity else {
+                    print("Building model not yet loaded!")
+                    return
+                }
+                
+                baseAnchorEntity.addChild(entity)
+            }
             else  {
                 //just place the model if it is not one of the first two
                 if let modelEntity = model.modelEntity {
@@ -297,10 +340,12 @@ struct ARViewContainer: UIViewRepresentable {
             entryPointInfo: entryPointInfo)
         
         print("new transform: \(transform)")
-        let anchorEntity = AnchorEntity(world: transform)
-        anchorEntity.addChild(modelEntity)
-        view.scene.addAnchor(anchorEntity)
-    
+        condoAnchorEntity = AnchorEntity(world: transform)
+        
+        modelEntity.setScale(simd_float3(0.01,0.01,0.01),relativeTo: condoAnchorEntity)
+        
+        condoAnchorEntity!.addChild(modelEntity)
+        view.scene.addAnchor(condoAnchorEntity!)
     }
     
     func createObjectTransform(modelInfo: ModelInfo, entryPointInfo:EntryPointInfo) -> simd_float4x4 {
@@ -457,6 +502,8 @@ struct ARViewContainer: UIViewRepresentable {
             zNormal: zNormal,
             location: intersectionVector)
         
+        
+        
         return newLocalToWorld;
     }
  
@@ -510,7 +557,8 @@ struct ARViewContainer: UIViewRepresentable {
             modelOffset
         )
         //local coords is in meters but the usdz is in cm
-        let scaleFactor:Float = 0.01;
+        //let scaleFactor:Float = 0.01;
+            let scaleFactor:Float = 1.0;
         let modelToLocalScale = simd_float4x4(diagonal: simd_float4(scaleFactor,scaleFactor,scaleFactor,Float(1)))
         
         //convert local coordinates to world coordinates
@@ -710,6 +758,51 @@ func printPlane(planeAnchor:ARPlaneAnchor) {
     for vertex in planeAnchor.geometry.vertices {
         print("\(vertex)")
     }
+}
+
+//alternate - instead of "Entity?" use ?: "(Entity & HasAnchoring)?"
+func loadUnanchoredScene(fileName: String, fileExtension: String, sceneName: String)  {
+        
+    print("Try to load scene: \(sceneName)")
+  
+    //========
+//    guard let realityFileUrl = Bundle.main.url(
+//        forResource: fileName,
+//        withExtension: fileExtension) else {
+//            print("Error finding entity file: \(fileName).\(fileExtension)")
+//            return
+//        }
+    
+//    guard let realityFilePath = Bundle.main.path(
+//        forResource: fileName,
+//        ofType: fileExtension) else {
+//            print("Error finding entity file: \(fileName)\(fileExtension)")
+//            return
+//        }
+//    let realityFileUrl = URL(fileURLWithPath: realityFilePath)
+    //=======
+    
+//    let realityFileSceneURL = realityFileUrl.appendingPathComponent(sceneName,isDirectory: false)
+    
+    //to load without anchor, we use "load" instead of "loadAnchor"
+//    let loadRequest = Entity.loadAsync(contentsOf: realityFileSceneURL/*, withName: "xxx"*/)
+    
+    let loadRequest = Entity.loadAsync(named: sceneName)
+    let cancellable = loadRequest.sink(receiveCompletion: { loadCompletion in
+        //handle error
+        print("Error loading scene: \(sceneName)")
+        if let c = externalLoading[sceneName] {
+            c.cancel()
+        }
+    }, receiveValue: { entity in
+        //do something with entity
+        externalScenes[sceneName] = entity
+        print("Success loading scene: \(entity.id) \(entity.children.count) \(sceneName)")
+        if let c = externalLoading[sceneName] {
+            c.cancel()
+        }
+    })
+    externalLoading[sceneName] = cancellable
 }
 
 func createMeshFromPlaneVertices(vertices:[vector_float3]) -> MeshResource {
