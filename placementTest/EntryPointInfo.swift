@@ -7,7 +7,9 @@
 
 import ARKit
 
-struct EntryPointInfo {
+struct EntryPointInfo: Identifiable {
+    let id: String
+    
     //coordinates of the entry point (the coordinates of the corner I am using)
     let entryPointSketchupCM: simd_float3
     

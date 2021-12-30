@@ -10,9 +10,7 @@ import RealityKit
 import ARKit
 import Combine
 
-var imageSet = false
-var detectedPlanes = [UUID:ARPlaneAnchor]()
-var aPlane:ARPlaneAnchor?
+var detectedPlanes = [UUID:DetectedPlaneInfo]()
 
 let unitX = simd_float4(1,0,0,0)
 let unitY = simd_float4(0,1,0,0)
@@ -20,27 +18,18 @@ let unitZ = simd_float4(0,0,1,0)
 let zeroVector = simd_float4(0,0,0,1)
 
 var condoModel:Model? = nil
-//let modelInfo =  ModelInfo(
-//    modelOriginSketchupCM: simd_float3(437.8325,736.6,0),
-//    entryPoints: [
-//        EntryPointInfo(
-//            entryPointSketchupCM: simd_float3(0,0,0),
-//            cornerNormalAlignment: [true,true,false]
-//        ),
-//        EntryPointInfo(
-//            entryPointSketchupCM: simd_float3(875.665,1229.995,0),
-//            cornerNormalAlignment: [false,true,true]
-//        ),
-//    ]
-//)
+
 let modelInfo =  ModelInfo(
+    name: "condo",
     modelOriginSketchupCM: simd_float3(4.378325,7.366,0),
     entryPoints: [
         EntryPointInfo(
+            id: "Bedroom",
             entryPointSketchupCM: simd_float3(0,0,0),
             cornerNormalAlignment: [true,true,false]
         ),
         EntryPointInfo(
+            id: "Living Room",
             entryPointSketchupCM: simd_float3(8.75665,12.29995,0),
             cornerNormalAlignment: [false,true,true]
         ),
@@ -52,438 +41,250 @@ var condoAnchorEntity:AnchorEntity? = nil
 //=========
 
 var externalScenes = [String:Entity]()
+var externalInfo = [String:SceneInfo]()
 
 var externalLoading = [String:Combine.AnyCancellable]()
 
+//func handleEntityTap(_ entity:Entity?) {
+//    if let e = entity {
+//        print("Entity tapped: \(e.name)")
+//    }
+//}
+
+
+
 struct ContentView : View {
+    @State private var modelPlaced = false;
     @State private var isPlacementEnabled = false
-    @State private var selectedModel: Model?
-    @State private var modelConfirmedForPlacement: Model?
-    @State private var parentAnchorForAddition: ARAnchor? = nil
+    @State private var selectedEntryPoint: EntryPointInfo?
+    @State private var entryPointConfirmedForPlacement: EntryPointInfo?
     
     init() {
-        //christmasScene = try! Christmas.loadChristmasScene()
+        //load the building model
+        condoModel = Model(modelName: modelInfo.name)
+        
+        //load the scenes
         loadUnanchoredScene(
             fileName: "Christmas",
-            fileExtension: ".rcproject",
+            fileExtension: ".reality",
             sceneName: "ChristmasScene"
+        )
+        loadUnanchoredScene(
+            fileName: "Random",
+            fileExtension: ".reality",
+            sceneName: "RandomScene"
+        )
+        let randomSceneInfo = SceneInfo(links: [
+            "cylinder":"https://www.apogeejs.com"
+        ])
+        externalInfo["RandomScene"] = randomSceneInfo;
+        loadUnanchoredScene(
+            fileName: "BowlingScene",
+            //fileExtension: ".rcproject",
+            fileExtension: ".reality",
+            sceneName: "BowlingScene"
         )
     }
     
-    var models: [Model] = {
-        let fileManager = FileManager.default
-        
-        guard let path = Bundle.main.resourcePath, let files = try? fileManager.contentsOfDirectory(atPath: path) else {
-            return []
-        }
-        
-        var availableModels: [Model] = []
-        for fileName in files where fileName.hasSuffix("usdz") {
-            let modelName = fileName.replacingOccurrences(of: ".usdz", with: "")
-            
-            let model = Model(modelName: modelName)
-            availableModels.append(model)
-            
-            if(modelName == "condo") {
-                condoModel = model
-            }
-        }
-        
-        return availableModels
-    }()
-    
     var body: some View {
         ZStack(alignment: .bottom) {
-            ARViewContainer(modelConfirmedForPlacement: self.$modelConfirmedForPlacement,
-                            parentAnchorForAddition: self.$parentAnchorForAddition,
-                            models: self.models)
+            ARViewContainer(entryPointConfirmedForPlacement: self.$entryPointConfirmedForPlacement,
+                            modelPlaced: self.$modelPlaced)
             
-            if self.isPlacementEnabled {
-                PlacementButtonsView(isPlacementEnabled: self.$isPlacementEnabled,
-                                     selectedModel: self.$selectedModel,
-                                     modelConfirmedForPlacement: self.$modelConfirmedForPlacement,
-                                     models: models)
+            if !self.modelPlaced {
+                if self.isPlacementEnabled {
+                    PlacementButtonsView(isPlacementEnabled: self.$isPlacementEnabled,
+                                         selectedEntryPoint: self.$selectedEntryPoint,
+                                         entryPointConfirmedForPlacement: self.$entryPointConfirmedForPlacement)
+                }
+                else {
+                    EntryPointPickerView(isPlacementEnabled: self.$isPlacementEnabled,
+                                    selectedEntryPoint: self.$selectedEntryPoint)
+                }
             }
-            else {
-                ModelPickerView(isPlacementEnabled: self.$isPlacementEnabled,
-                                selectedModel: self.$selectedModel,
-                                models: models)
-            }
-            
         }
     }
 }
 
 struct ARViewContainer: UIViewRepresentable {
-    @Binding var modelConfirmedForPlacement: Model?
-    @Binding var parentAnchorForAddition: ARAnchor?
-    var models: [Model]
+    @Binding var entryPointConfirmedForPlacement: EntryPointInfo?
+    @Binding var modelPlaced: Bool
     
-    //FIRST VERSION OF MAKE UI VIEW WITH STANDARD AR VIEW
-//    func makeUIView(context: Context) -> ARView {
-//
-//        let arView = ARView(frame: .zero)
-//
-//        //ar view configuration----
-//        let config = ARWorldTrackingConfiguration()
-//        config.planeDetection = [.horizontal, .vertical]
-//        config.environmentTexturing = .automatic
-//
-//        //this is for if we have lidar scene reconstruction (he says)
-//        if(ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh)) {
-//            config.sceneReconstruction = .mesh
-//            print("DEBUG: Enabling mesh scene reconstruction")
-//        }
-//
-//        arView.session.run(config)
-//        //---------------------
-//
-//        return arView
-//
-//    }
-    
-    //SECOND VERSION OF MAKE UI VIEW WITH FOCUS SQUARE
     func makeUIView(context: Context) -> ARView {
         let customARView = CustomARView(frame: .zero)
-        customARView.anchorPlacer = self
+        customARView.viewContainer = self
         return customARView
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
         
-        if let model = modelConfirmedForPlacement {
+        if let entryPointInfo = entryPointConfirmedForPlacement {
             
-    
-//dont reset session
-//            if model.modelName == "fender_stratocaster" {
-//                //model 0 selected - stop plane detection
-//                if let customARView = uiView as? CustomARView {
-//                    customARView.setupARView(enablePlaneDetection: false)
-//                    print("Reconfig with no plane detection!")
-//                }
-//                else {
-//                    print("Failed reconfig - incorrect ARView type!")
-//                }
-//
-//            }
-//            else
-            if model.modelName == "toy_drummer" {
-                //model 1 selected - print detected planes
-                printPlanes()
-                addPlanes(view: uiView)
-                
-//                if let planeAnchor = aPlane {
-//                    print("Adding a plane instead of model 1")
-//                    let meshResource = MeshResource.generatePlane(width: planeAnchor.extent[0], depth: planeAnchor.extent[1])
-//                    let material = SimpleMaterial(color: SimpleMaterial.Color.cyan, isMetallic: true)
-//                    let modelEntity = ModelEntity(mesh: meshResource, materials: [material])
-//
-//                    let anchorEntity = AnchorEntity(plane: .any)
-//                    anchorEntity.addChild(modelEntity.clone(recursive: true))
-//                    uiView.scene.addAnchor(anchorEntity)
-//                }
-                
-                
-                //add the existing model to the plane location
-//                if let modelEntity = model.modelEntity {
-//                    for planeAnchor in detectedPlanes.values {
-//                        let anchorEntity = AnchorEntity(world: planeAnchor.transform)
-//
-//                        print("detected plane transform: \(planeAnchor.transform)")
-//                        print("new entity transform \(anchorEntity.transform)")
-//
-//                        anchorEntity.addChild(modelEntity.clone(recursive: true))
-//                        uiView.scene.addAnchor(anchorEntity)
-//                    }
-//                }
-                
-//                for planeAnchor in detectedPlanes.values {
-//                    let anchorEntity = AnchorEntity(world: planeAnchor.transform)
-//
-//                    let meshResource = MeshResource.generatePlane(width: planeAnchor.extent[0], depth: planeAnchor.extent[2])
-//                    //let meshResource = MeshResource.generatePlane(width: 0.3, depth: 0.3)
-//                    //let meshResource = MeshResource.generateSphere(radius: 0.3)
-//                    let material = SimpleMaterial(color: SimpleMaterial.Color.cyan, isMetallic: true)
-//                    let modelEntity = ModelEntity(mesh: meshResource, materials: [material])
-//
-//                    anchorEntity.addChild(modelEntity.clone(recursive: true))
-//                    uiView.scene.addAnchor(anchorEntity)
-//                }
-            }
-            else if model.modelName == "condo" {
-                guard let modelToPlace = condoModel else {
-                    print("Condo model does not exist!");
-                    return;
-                }
-                
-                let entryPointInfo = modelInfo.entryPoints[0];
-                placeModel(
-                    view: uiView,
-                    model: modelToPlace,
-                    modelInfo: modelInfo,
-                    entryPointInfo: entryPointInfo)
-            }
-            else if model.modelName == "fender_stratocaster" {
-                guard let modelToPlace = condoModel else {
-                    print("Condo model does not exist!");
-                    return;
-                }
-                
-                let entryPointInfo = modelInfo.entryPoints[1];
-                placeModel(
-                    view: uiView,
-                    model: modelToPlace,
-                    modelInfo: modelInfo,
-                    entryPointInfo: entryPointInfo)
-            }
-            else if model.modelName == "toy_biplane" {
-                guard let entity = externalScenes["ChristmasScene"] else {
-                    print("Christmas scene not loaded!");
-                    return
-                }
-                
-                guard let baseAnchorEntity = condoAnchorEntity else {
-                    print("Building model not yet loaded!")
-                    return
-                }
-                
-                baseAnchorEntity.addChild(entity)
-            }
-            else  {
-                //just place the model if it is not one of the first two
-                if let modelEntity = model.modelEntity {
-                    let anchorEntity = AnchorEntity(plane: .any)
-                    //NOTE - before we added the clone statement, it was adding the same model multiple times
-                    //in which case it removed the old placement of the model. This fixes that by adding a clone of the model
-                    anchorEntity.addChild(modelEntity.clone(recursive: true))
-                    uiView.scene.addAnchor(anchorEntity)
-                    print("DEBUG: place model - \(model.modelName)")
-                }
-                else {
-                    print("DEBUG: Unable to place model - model entity not loaded - \(model.modelName)")
-                }
+            let modelPlaced = placeModel(
+                view: uiView,
+                model: condoModel!,
+                modelInfo: modelInfo,
+                entryPointInfo: entryPointInfo)
+            
+            if(modelPlaced) {
+                removeDetectedPlanes(view: uiView)
+                print("planes removed!")
             }
             
             DispatchQueue.main.async {
-                self.modelConfirmedForPlacement = nil
+                self.entryPointConfirmedForPlacement = nil
+                self.modelPlaced = modelPlaced;
             }
-        }
-        
-        if let parentAnchor = parentAnchorForAddition {
-            let model = self.models[1]
-            
-            if let modelEntity = model.modelEntity {
-                let anchorEntity = AnchorEntity(anchor: parentAnchor)
-                anchorEntity.addChild(modelEntity.clone(recursive: true))
-                uiView.scene.addAnchor(anchorEntity)
-                print("DEBUG: placed model on parent - \(model.modelName)")
-                
-                DispatchQueue.main.async {
-                    self.parentAnchorForAddition = nil
-                }
-            }
-        }
-        
-    }
-    
-    func placeAnchor(parentAnchor: ARAnchor) {
-        DispatchQueue.main.async {
-            self.parentAnchorForAddition = parentAnchor
         }
     }
     
-    //==========
-    func addPlanes(view: ARView) {
-        for planeAnchor in detectedPlanes.values {
-            placePlane(planeAnchor: planeAnchor, view: view)
+    func removeDetectedPlanes(view: ARView) {
+        for detectedPlaneInfo in detectedPlanes.values {
+            if let anchorEntity = detectedPlaneInfo.visualizedAnchorEntity {
+                view.scene.removeAnchor(anchorEntity)
+                detectedPlaneInfo.visualizedAnchorEntity = nil
+                print("plane removed  \(anchorEntity.id)")
+            }
+            else {
+                print("no viz added for plane!")
+            }
         }
-    }
-
-    func placePlane(planeAnchor:ARPlaneAnchor, view: ARView) {
-        
-        //let meshResource = MeshResource.generatePlane(width: planeAnchor.extent[0], depth: planeAnchor.extent[1])
-        let meshResource = createMeshFromPlaneVertices(vertices: planeAnchor.geometry.vertices)
-        var material = PhysicallyBasedMaterial()
-        let modelEntity = ModelEntity(mesh: meshResource, materials: [material])
-        
-        let anchorEntity = AnchorEntity(world: planeAnchor.transform)
-        
-        print("detected plane transform: \(planeAnchor.transform)")
-        print("new entity transform \(anchorEntity.transform)")
-        
-        anchorEntity.addChild(modelEntity)
-        view.scene.addAnchor(anchorEntity)
-        //anchorEntities.append(anchorEntity)
     }
     
     func placeModel(view: ARView,
                     model: Model,
                     modelInfo: ModelInfo,
-                    entryPointInfo: EntryPointInfo) {
-        
-        if(detectedPlanes.count != 3) {
-            print("three planes not found! found \(detectedPlanes.count)")
-//            for planeAnchor in detectedPlanes.values {
-//                view.scene.removeAnchor(planeAnchor)
-//            }
-//            detectedPlanes = [UUID:ARPlaneAnchor]()
-            return;
-        }
+                    entryPointInfo: EntryPointInfo) -> Bool {
         
         guard let modelEntity = model.modelEntity else {
             print("Condo model not loaded!");
-            return;
+            return false;
+        }
+        
+        let (resolvedPlanes,msg) = self.identifyPlanes(entryPointInfo: entryPointInfo)
+        
+        //check for success finding the planes
+        guard let planeInfoArray = resolvedPlanes else {
+            let errorMsg = msg != nil ? msg! : "Walls and floor could not be found"
+            print(errorMsg)
+            return false;
         }
         
         let transform = self.createObjectTransform(
+            planeInfoArray: planeInfoArray,
             modelInfo: modelInfo,
-            entryPointInfo: entryPointInfo)
+            entryPointInfo: entryPointInfo
+        )
         
         print("new transform: \(transform)")
         condoAnchorEntity = AnchorEntity(world: transform)
         
-        modelEntity.setScale(simd_float3(0.01,0.01,0.01),relativeTo: condoAnchorEntity)
+        //add this if we need to scale the model
+        //we might also want axes rotation here too
+        //modelEntity.setScale(simd_float3(0.01,0.01,0.01),relativeTo: condoAnchorEntity)
         
         condoAnchorEntity!.addChild(modelEntity)
         view.scene.addAnchor(condoAnchorEntity!)
+        
+        return true;
     }
     
-    func createObjectTransform(modelInfo: ModelInfo, entryPointInfo:EntryPointInfo) -> simd_float4x4 {
+    func identifyPlanes(entryPointInfo:EntryPointInfo) -> ([DetectedPlaneInfo]?,String?) {
         let cornerNormalAlignment = entryPointInfo.cornerNormalAlignment;
         
-        var planeInfoArray = [PlaneInfo]()
+        var yPlane: DetectedPlaneInfo?
+        var vPlanes =  [DetectedPlaneInfo]()
         
-        for planeAnchor in detectedPlanes.values {
-            print("plane \(planeAnchor.identifier)")
-            let localToWorld = planeAnchor.transform
-            let worldToLocal = localToWorld.inverse
-            
-            print("transform: \(localToWorld)")
-            print("inverse transform: \(worldToLocal)")
-                  
-            //==================
-            //find plane normals
-            //==================
-            
-            let worldNormal = simd_mul(localToWorld,unitY)
-            
-            print("plane normal: \(worldNormal)")
-            
-            //==================
-            //find plane intersection vector
-            //==================
-            
-            let yProjection = simd_mul(unitY,worldToLocal)
-            
-            print("y projection: \(yProjection)")
-            
-            planeInfoArray.append(PlaneInfo(
-                localToWorld: localToWorld,
-                worldToLocal: worldToLocal,
-                worldNormal: worldNormal,
-                yProjection: yProjection
-            ))
+        for detectedPlaneInfo in detectedPlanes.values {
+            if (cornerNormalAlignment[1] == true)&&(detectedPlaneInfo.type == DetectedPlaneInfo.PlaneType.HORIZONTAL_UP) {
+                if(yPlane != nil) {
+                    //second Y candidate - not valid scenario
+                    return (nil,"Too many floor candidates!")
+                }
+                yPlane = detectedPlaneInfo
+            }
+            else if (cornerNormalAlignment[1] == false)&&(detectedPlaneInfo.type == DetectedPlaneInfo.PlaneType.HORIZONTAL_DOWN) {
+                if(yPlane != nil) {
+                    //second Y candidate - not valid scenario
+                    return (nil,"Too many floor candidates!")
+                }
+                yPlane = detectedPlaneInfo
+            }
+            else if detectedPlaneInfo.type == DetectedPlaneInfo.PlaneType.VERTICAL {
+                vPlanes.append(detectedPlaneInfo)
+            }
         }
         
-        //=============
-        // Find the intersction of all three planes
-        //=============
-        let intersectionMatrix = simd_float4x4(
-            planeInfoArray[0].yProjection,
-            planeInfoArray[1].yProjection,
-            planeInfoArray[2].yProjection,
-            zeroVector
-        ).transpose
-        print("intersectionMatrix \(intersectionMatrix)")
+        //we want two vertical planes that are orthoganol
+        if(vPlanes.count < 2) {
+            return (nil,"Not enough wall candidates!")
+        }
         
-        let intersectionVector = simd_mul(intersectionMatrix.inverse,zeroVector)
-        print("intersection vector \(intersectionVector)")
-        
-        //check the intersection projected into each local coordinate system has y=0
-        print("intersection test 0: \(simd_mul(planeInfoArray[0].worldToLocal,intersectionVector))")
-        print("intersection test 1: \(simd_mul(planeInfoArray[1].worldToLocal,intersectionVector))")
-        print("intersection test 2: \(simd_mul(planeInfoArray[2].worldToLocal,intersectionVector))")
-        
-        //================
-        //identify the planes (clean this up! I think I can simplify it)
-        //================
-        var xIndex:Int = -1
-        var yIndex:Int = -1
-        var zIndex:Int = -1
-        for index in (0..<3) {  //we need this to be three
-            //let xProj = simd_dot(unitY,planeInfo.worldNormal)
-            let yProj = simd_dot(unitY,planeInfoArray[index].worldNormal)
-            //let zProj = simd_dot(unitY,planeInfo.worldNormal)
-            
-            //we expect this to be very close to 1, but we will use > .9
-            if((yProj > 0.9)||(yProj < -0.9)) {
-                if(yIndex == -1) {
-                    yIndex = index
-                }
-                else {
-                    print("repeat y value!")
+        //find the x and z plane candidates
+        var xPlaneCandidate,zPlaneCandidate: DetectedPlaneInfo?
+        for i in (0..<vPlanes.count-1) {
+            let plane1 = vPlanes[i]
+            for j in (i..<vPlanes.count) {
+                let plane2 = vPlanes[j]
+                print("orthogonal test: \(simd_length(simd_cross(plane1.worldNormal3,plane2.worldNormal3)))")
+                if DetectedPlaneInfo.vectorsOrthogonal(plane1.worldNormal3, plane2.worldNormal3) {
+                    if(xPlaneCandidate != nil) {
+                        //oops - we already found a pair
+                        return (nil,"Too many wall candidates")
+                    }
+                    
+                    xPlaneCandidate = plane1
+                    zPlaneCandidate = plane2
                 }
             }
         }
         
-        //guess the x and z indices
-        if(yIndex == 1) {
-            xIndex = 0
-            zIndex = 2
+        if(xPlaneCandidate == nil) {
+            //no x and z candidates found
+            return (nil,"No valid wall candidates found")
         }
-        else if(yIndex == 2) {
-            xIndex = 1
-            zIndex = 0
-        }
-        else {
-            xIndex = 2
-            zIndex = 1
+                  
+        //if we get here, we found only one valid combination
+        
+        //the proper planes will be right handed (once corrected for corner alignment reltive to axes)
+        
+        let det = simd_determinant(simd_float3x3(xPlaneCandidate!.worldNormal3,yPlane!.worldNormal3,zPlaneCandidate!.worldNormal3))
+        
+        var expectedDetPositive = true
+        for normalAlignment in cornerNormalAlignment {
+            if(!normalAlignment) {
+                expectedDetPositive = !expectedDetPositive
+            }
         }
         
-        let det = simd_float4x4(
-            planeInfoArray[xIndex].worldNormal,
-            planeInfoArray[yIndex].worldNormal,
-            planeInfoArray[zIndex].worldNormal,
-            zeroVector
-        ).determinant
-        
-        //==============
-        //get the expected determinant based on cube normals versus coordinate system
-        var isPositive = true
-        if(!cornerNormalAlignment[0]) {
-            isPositive = !isPositive
-        }
-        if(!cornerNormalAlignment[1]) {
-            isPositive = !isPositive
-        }
-        if(!cornerNormalAlignment[2]) {
-            isPositive = !isPositive
-        }
-        //=================
-            
-            
-        print("determninant: \(det)")
-        
-        //if the determinant is negative we guessed wrong for x and z
-        if (det > 0) != isPositive {
-            swap(&xIndex,&zIndex)
+        if (det > 0) != expectedDetPositive {
+            //we guessed x and z wrong - swap them
+            swap(&xPlaneCandidate,&zPlaneCandidate)
         }
         
-        print("xIndex: \(xIndex), yIndex: \(yIndex), zIndex: \(zIndex), ")
+        return ([xPlaneCandidate!,yPlane!,zPlaneCandidate!],nil)
+    }
+    
+    func createObjectTransform(planeInfoArray: [DetectedPlaneInfo],
+                               modelInfo: ModelInfo,
+                               entryPointInfo:EntryPointInfo) -> simd_float4x4 {
+        
+        let cornerNormalAlignment = entryPointInfo.cornerNormalAlignment;
         
         //===========
-        //orthoganolize the normals
+        //orthogonalize the normals
         //===========
+        
         //tke y to be the y unit vector -
         let yNormal = unitY;
         
-        var initialX = planeInfoArray[xIndex].worldNormal
+        var initialX = planeInfoArray[0].worldNormal4
         if(!cornerNormalAlignment[0]) {
             initialX = getVectorNegative(initialX)
         }
         let xNormal = projectOut(inputVector: initialX, projectOut: yNormal)
             
-        var initialZ = planeInfoArray[zIndex].worldNormal
+        var initialZ = planeInfoArray[2].worldNormal4
         if(!cornerNormalAlignment[2]) {
             initialZ = getVectorNegative(initialZ)
         }
@@ -494,6 +295,31 @@ struct ARViewContainer: UIViewRepresentable {
         print("local x unit vector: \(xNormal)")
         print("local z unit vector: \(zNormal)")
         
+        //=============
+        // Find the intersction of all three planes
+        //=============
+        
+        let intersectionMatrix = simd_float4x4(
+            getInPlaneColumn(detectedPlaneInfo: planeInfoArray[0]),
+            getInPlaneColumn(detectedPlaneInfo: planeInfoArray[1]),
+            getInPlaneColumn(detectedPlaneInfo: planeInfoArray[2]),
+            zeroVector
+        ).transpose
+        
+        print("intersectionMatrix \(intersectionMatrix)")
+        
+        let intersectionVector = simd_mul(intersectionMatrix.inverse,zeroVector)
+        print("intersection vector \(intersectionVector)")
+        
+        //check the intersection projected into each local coordinate system has y=0
+        print("intersection test 0: \(simd_mul(planeInfoArray[0].detectedAnchor.transform.inverse,intersectionVector))")
+        print("intersection test 1: \(simd_mul(planeInfoArray[1].detectedAnchor.transform.inverse,intersectionVector))")
+        print("intersection test 2: \(simd_mul(planeInfoArray[2].detectedAnchor.transform.inverse,intersectionVector))")
+        
+        //===============
+        //create the transform for the model
+        //===============
+        
         let newLocalToWorld = createTransform(
             modelInfo: modelInfo,
             entryPointInfo: entryPointInfo,
@@ -502,9 +328,11 @@ struct ARViewContainer: UIViewRepresentable {
             zNormal: zNormal,
             location: intersectionVector)
         
-        
-        
         return newLocalToWorld;
+    }
+    
+    func getInPlaneColumn(detectedPlaneInfo: DetectedPlaneInfo) -> simd_float4 {
+        return simd_mul(unitY,detectedPlaneInfo.detectedAnchor.transform.inverse)
     }
  
     
@@ -556,10 +384,6 @@ struct ARViewContainer: UIViewRepresentable {
             unitZ,
             modelOffset
         )
-        //local coords is in meters but the usdz is in cm
-        //let scaleFactor:Float = 0.01;
-            let scaleFactor:Float = 1.0;
-        let modelToLocalScale = simd_float4x4(diagonal: simd_float4(scaleFactor,scaleFactor,scaleFactor,Float(1)))
         
         //convert local coordinates to world coordinates
         let localToWorld = simd_float4x4(
@@ -570,35 +394,26 @@ struct ARViewContainer: UIViewRepresentable {
         )
             
         //chain the transformations
-        return simd_mul(localToWorld,simd_mul(modelToLocalScale,modelToLocalLocation))
+        return simd_mul(localToWorld,modelToLocalLocation)
     }
     
     
     
 }
 
-struct ModelPickerView: View {
+struct EntryPointPickerView: View {
     @Binding var isPlacementEnabled: Bool
-    @Binding var selectedModel: Model?
-    
-    var models:[Model]
+    @Binding var selectedEntryPoint: EntryPointInfo?
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 30) {
-                ForEach(0..<self.models.count) { index in
-                    Button(action: {
-                        print("DEBUG: Model with name : \(self.models[index].modelName)")
+                ForEach(modelInfo.entryPoints) { entryPointInfo in
+                    Button(entryPointInfo.id) {
+                        print("DEBUG: Model with name : \(entryPointInfo.id)")
                         
-                        self.selectedModel = self.models[index]
+                        self.selectedEntryPoint = entryPointInfo
                         self.isPlacementEnabled = true;
-                    }) {
-                        Image(uiImage: self.models[index].image)
-                            .resizable()
-                            .frame(height: 80)
-                            .aspectRatio(1/1,contentMode: .fit)
-                            .background(Color.white)
-                            .cornerRadius(12)
                     }
                 }
             }
@@ -606,15 +421,12 @@ struct ModelPickerView: View {
         .padding(20)
         .background(Color.black.opacity(0.5))
     }
-
 }
 
 struct PlacementButtonsView: View {
     @Binding var isPlacementEnabled: Bool
-    @Binding var selectedModel: Model?
-    @Binding var modelConfirmedForPlacement: Model?
-    
-    var models:[Model]
+    @Binding var selectedEntryPoint: EntryPointInfo?
+    @Binding var entryPointConfirmedForPlacement: EntryPointInfo?
     
     var body: some View {
         HStack {
@@ -634,7 +446,7 @@ struct PlacementButtonsView: View {
             //confirm button
             Button(action: {
                 print("DEBUG: Model placement confirmed")
-                self.modelConfirmedForPlacement = self.selectedModel
+                self.entryPointConfirmedForPlacement = self.selectedEntryPoint
                 resetPlacementParameters()
             }, label: {
                 Image(systemName: "checkmark")
@@ -649,8 +461,8 @@ struct PlacementButtonsView: View {
     }
     
     func resetPlacementParameters() {
-        self.isPlacementEnabled = false;
-        self.selectedModel = nil
+        self.isPlacementEnabled = false
+        self.selectedEntryPoint = nil
     }
     
 }
@@ -658,13 +470,10 @@ struct PlacementButtonsView: View {
 //=============================================
 // This is the Custom AR View
 class CustomARView: ARView, ARSessionDelegate {
-    var anchorPlacer: ARViewContainer?
+    var viewContainer: ARViewContainer?
     
     required init(frame frameRect: CGRect) {
         super.init(frame: frameRect)
-        
-        //self.delegate = self
-        //self.session.delegate = self
         
         self.setupARView(enablePlaneDetection: true)
     }
@@ -704,50 +513,44 @@ class CustomARView: ARView, ARSessionDelegate {
     }
     
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
-        for anchor in anchors {
-            if let imageAnchor = anchor as? ARImageAnchor {
-                if !imageSet {
-                    print("YES! An image anchor was added!")
-                    imageSet = true;
-                    
-                    if let ap = self.anchorPlacer {
-                        let parentAnchor = ARAnchor(anchor: imageAnchor)
-                        ap.placeAnchor(parentAnchor: parentAnchor)
+        guard let vc = viewContainer else {
+            return;
+        }
+        
+        if(!vc.modelPlaced) {
+            for anchor in anchors {
+                if let planeAnchor = anchor as? ARPlaneAnchor {
+                    var detectedPlane = detectedPlanes[planeAnchor.identifier]
+                    if detectedPlane != nil {
+                        detectedPlane!.update(updatedAnchor: planeAnchor)
                     }
-                }
-                else {
-                    print("image seen, but already set")
-                }
-            }
-            else if let planeAnchor = anchor as? ARPlaneAnchor {
-                if(detectedPlanes[planeAnchor.identifier] != nil) {
-                    print("Plane updated found for \(planeAnchor.identifier)")
-                }
-                else {
-                    print("New Plane found: \(planeAnchor.identifier)")
-                }
-                detectedPlanes[planeAnchor.identifier] = planeAnchor
+                    else {
+                        print("New Plane found: \(planeAnchor.identifier)")
+                        detectedPlane = DetectedPlaneInfo(detectedAnchor: planeAnchor)
+                        detectedPlanes[planeAnchor.identifier] = detectedPlane
+                    }
+                    
+                    if let oldAnchorEntity = detectedPlane!.visualizedAnchorEntity {
+                        self.scene.removeAnchor(oldAnchorEntity)
+                        detectedPlane!.visualizedAnchorEntity = nil
+                    }
+                    if let newAnchorEntity = detectedPlane!.updatedAnchorEntity {
+                        self.scene.addAnchor(newAnchorEntity)
+                        detectedPlane!.updatedAnchorEntity = nil
+                        detectedPlane!.visualizedAnchorEntity = newAnchorEntity
+                    }
                 
-                //============
-                //grarb the first plane
-                if aPlane == nil {
-                    aPlane = planeAnchor
                 }
-                //=============
             }
-            else {
-                //print("a non-image anchor was added")
-            }
-            
         }
     }
 }
 
-func printPlanes() {
-    for planeAnchor in detectedPlanes.values {
-        printPlane(planeAnchor: planeAnchor)
-    }
-}
+//func printPlanes() {
+//    for planeAnchor in detectedPlanes.values {
+//        printPlane(planeAnchor: planeAnchor)
+//    }
+//}
 
 func printPlane(planeAnchor:ARPlaneAnchor) {
     print("ARPlaneAnchor ID: \(planeAnchor.identifier)")
@@ -766,12 +569,12 @@ func loadUnanchoredScene(fileName: String, fileExtension: String, sceneName: Str
     print("Try to load scene: \(sceneName)")
   
     //========
-//    guard let realityFileUrl = Bundle.main.url(
-//        forResource: fileName,
-//        withExtension: fileExtension) else {
-//            print("Error finding entity file: \(fileName).\(fileExtension)")
-//            return
-//        }
+    guard let realityFileUrl = Bundle.main.url(
+        forResource: fileName,
+        withExtension: fileExtension) else {
+            print("Error finding entity file: \(fileName)\(fileExtension)")
+            return
+        }
     
 //    guard let realityFilePath = Bundle.main.path(
 //        forResource: fileName,
@@ -782,12 +585,12 @@ func loadUnanchoredScene(fileName: String, fileExtension: String, sceneName: Str
 //    let realityFileUrl = URL(fileURLWithPath: realityFilePath)
     //=======
     
-//    let realityFileSceneURL = realityFileUrl.appendingPathComponent(sceneName,isDirectory: false)
+    let realityFileSceneURL = realityFileUrl.appendingPathComponent(sceneName,isDirectory: false)
     
     //to load without anchor, we use "load" instead of "loadAnchor"
-//    let loadRequest = Entity.loadAsync(contentsOf: realityFileSceneURL/*, withName: "xxx"*/)
+    let loadRequest = Entity.loadAsync(contentsOf: realityFileSceneURL)
     
-    let loadRequest = Entity.loadAsync(named: sceneName)
+ //   let loadRequest = Entity.loadAsync(named: sceneName)
     let cancellable = loadRequest.sink(receiveCompletion: { loadCompletion in
         //handle error
         print("Error loading scene: \(sceneName)")
@@ -795,7 +598,6 @@ func loadUnanchoredScene(fileName: String, fileExtension: String, sceneName: Str
             c.cancel()
         }
     }, receiveValue: { entity in
-        //do something with entity
         externalScenes[sceneName] = entity
         print("Success loading scene: \(entity.id) \(entity.children.count) \(sceneName)")
         if let c = externalLoading[sceneName] {
@@ -838,3 +640,146 @@ struct ContentView_Previews : PreviewProvider {
 }
 #endif
 
+//old placement code
+//
+////dont reset session
+////            if model.modelName == "fender_stratocaster" {
+////                //model 0 selected - stop plane detection
+////                if let customARView = uiView as? CustomARView {
+////                    customARView.setupARView(enablePlaneDetection: false)
+////                    print("Reconfig with no plane detection!")
+////                }
+////                else {
+////                    print("Failed reconfig - incorrect ARView type!")
+////                }
+////
+////            }
+////            else
+//            if model.modelName == "toy_drummer" {
+//                //model 1 selected - print detected planes
+//                //printPlanes()
+//                //addPlanes(view: uiView)
+//
+////                if let planeAnchor = aPlane {
+////                    print("Adding a plane instead of model 1")
+////                    let meshResource = MeshResource.generatePlane(width: planeAnchor.extent[0], depth: planeAnchor.extent[1])
+////                    let material = SimpleMaterial(color: SimpleMaterial.Color.cyan, isMetallic: true)
+////                    let modelEntity = ModelEntity(mesh: meshResource, materials: [material])
+////
+////                    let anchorEntity = AnchorEntity(plane: .any)
+////                    anchorEntity.addChild(modelEntity.clone(recursive: true))
+////                    uiView.scene.addAnchor(anchorEntity)
+////                }
+//
+//
+//                //add the existing model to the plane location
+////                if let modelEntity = model.modelEntity {
+////                    for planeAnchor in detectedPlanes.values {
+////                        let anchorEntity = AnchorEntity(world: planeAnchor.transform)
+////
+////                        print("detected plane transform: \(planeAnchor.transform)")
+////                        print("new entity transform \(anchorEntity.transform)")
+////
+////                        anchorEntity.addChild(modelEntity.clone(recursive: true))
+////                        uiView.scene.addAnchor(anchorEntity)
+////                    }
+////                }
+//
+////                for planeAnchor in detectedPlanes.values {
+////                    let anchorEntity = AnchorEntity(world: planeAnchor.transform)
+////
+////                    let meshResource = MeshResource.generatePlane(width: planeAnchor.extent[0], depth: planeAnchor.extent[2])
+////                    //let meshResource = MeshResource.generatePlane(width: 0.3, depth: 0.3)
+////                    //let meshResource = MeshResource.generateSphere(radius: 0.3)
+////                    let material = SimpleMaterial(color: SimpleMaterial.Color.cyan, isMetallic: true)
+////                    let modelEntity = ModelEntity(mesh: meshResource, materials: [material])
+////
+////                    anchorEntity.addChild(modelEntity.clone(recursive: true))
+////                    uiView.scene.addAnchor(anchorEntity)
+////                }
+//            }
+//            else if model.modelName == "condo" {
+//                guard let modelToPlace = condoModel else {
+//                    print("Condo model does not exist!");
+//                    return;
+//                }
+//
+//                let entryPointInfo = modelInfo.entryPoints[0];
+//                placeModel(
+//                    view: uiView,
+//                    model: modelToPlace,
+//                    modelInfo: modelInfo,
+//                    entryPointInfo: entryPointInfo)
+//            }
+//            else if model.modelName == "fender_stratocaster" {
+//                guard let modelToPlace = condoModel else {
+//                    print("Condo model does not exist!");
+//                    return;
+//                }
+//
+//                let entryPointInfo = modelInfo.entryPoints[1];
+//                placeModel(
+//                    view: uiView,
+//                    model: modelToPlace,
+//                    modelInfo: modelInfo,
+//                    entryPointInfo: entryPointInfo)
+//            }
+//            else if model.modelName == "toy_biplane" {
+//                guard let entity = externalScenes["ChristmasScene"] else {
+//                    print("Christmas scene not loaded!");
+//                    return
+//                }
+//
+//                guard let baseAnchorEntity = condoAnchorEntity else {
+//                    print("Building model not yet loaded!")
+//                    return
+//                }
+//
+//                baseAnchorEntity.addChild(entity)
+//            }
+//            else if model.modelName == "toy_robot_vintage" {
+//                guard let entity = externalScenes["BowlingScene"] else {
+//                    print("Bowling scene not loaded!");
+//                    return
+//                }
+//
+//                guard let baseAnchorEntity = condoAnchorEntity else {
+//                    print("Building model not yet loaded!")
+//                    return
+//                }
+//
+//                baseAnchorEntity.addChild(entity)
+//            }
+//            else if model.modelName == "toy_car" {
+////                guard let randomAnchor = randomScene else {
+////                    print("random scene not present")
+////                    return
+////                }
+////                uiView.scene.anchors.append(randomAnchor)
+//                guard let entity = externalScenes["RandomScene"] else {
+//                    print("Random scene not loaded!");
+//                    return
+//                }
+//
+//                guard let baseAnchorEntity = condoAnchorEntity else {
+//                    print("Building model not yet loaded!")
+//                    return
+//                }
+//
+//                baseAnchorEntity.addChild(entity)
+//            }
+//            else  {
+//                //just place the model if it is not one of the first two
+//                if let modelEntity = model.modelEntity {
+//                    let anchorEntity = AnchorEntity(plane: .any)
+//                    //NOTE - before we added the clone statement, it was adding the same model multiple times
+//                    //in which case it removed the old placement of the model. This fixes that by adding a clone of the model
+//                    anchorEntity.addChild(modelEntity.clone(recursive: true))
+//                    uiView.scene.addAnchor(anchorEntity)
+//                    print("DEBUG: place model - \(model.modelName)")
+//                }
+//                else {
+//                    print("DEBUG: Unable to place model - model entity not loaded - \(model.modelName)")
+//                }
+//            }
+//

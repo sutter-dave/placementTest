@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		370632F827750CBF0009565A /* PlaneInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 370632F727750CBF0009565A /* PlaneInfo.swift */; };
-		3711A13C277A7F0900CDBC8E /* Christmas.rcproject in Sources */ = {isa = PBXBuildFile; fileRef = 3711A139277A652900CDBC8E /* Christmas.rcproject */; };
 		37477BBA2774F4DE0057CEB0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37477BB92774F4DE0057CEB0 /* AppDelegate.swift */; };
 		37477BBC2774F4DE0057CEB0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37477BBB2774F4DE0057CEB0 /* ContentView.swift */; };
 		37477BC02774F4E00057CEB0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 37477BBF2774F4E00057CEB0 /* Assets.xcassets */; };
@@ -17,12 +15,13 @@
 		37477BD72774F4E00057CEB0 /* placementTestUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37477BD62774F4E00057CEB0 /* placementTestUITests.swift */; };
 		37477BD92774F4E00057CEB0 /* placementTestUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37477BD82774F4E00057CEB0 /* placementTestUITestsLaunchTests.swift */; };
 		37477BE62774F53A0057CEB0 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37477BE52774F53A0057CEB0 /* Model.swift */; };
-		37477BEE2774F5B40057CEB0 /* fender_stratocaster.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BE82774F5B40057CEB0 /* fender_stratocaster.usdz */; };
-		37477BEF2774F5B40057CEB0 /* toy_drummer.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BE92774F5B40057CEB0 /* toy_drummer.usdz */; };
 		37477BF02774F5B40057CEB0 /* condo.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BEA2774F5B40057CEB0 /* condo.usdz */; };
-		37477BF12774F5B40057CEB0 /* toy_car.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BEB2774F5B40057CEB0 /* toy_car.usdz */; };
-		37477BF22774F5B40057CEB0 /* toy_robot_vintage.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BEC2774F5B40057CEB0 /* toy_robot_vintage.usdz */; };
-		37477BF32774F5B40057CEB0 /* toy_biplane.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37477BED2774F5B40057CEB0 /* toy_biplane.usdz */; };
+		37533759277BDFEC001A7AB8 /* SceneInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37533758277BDFEC001A7AB8 /* SceneInfo.swift */; };
+		3753375E277C06C3001A7AB8 /* BowlingScene.reality in Resources */ = {isa = PBXBuildFile; fileRef = 3753375D277C06C3001A7AB8 /* BowlingScene.reality */; };
+		37533760277C13BB001A7AB8 /* RandomExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3753375F277C13BB001A7AB8 /* RandomExample.swift */; };
+		37533762277CDFCB001A7AB8 /* Christmas.reality in Resources */ = {isa = PBXBuildFile; fileRef = 37533761277CDFCB001A7AB8 /* Christmas.reality */; };
+		37533764277CDFD6001A7AB8 /* Random.reality in Resources */ = {isa = PBXBuildFile; fileRef = 37533763277CDFD6001A7AB8 /* Random.reality */; };
+		37533766277CF0F2001A7AB8 /* DetectedPlaneInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37533765277CF0F2001A7AB8 /* DetectedPlaneInfo.swift */; };
 		3798D6B127794166008C25BF /* EntryPointInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3798D6B027794166008C25BF /* EntryPointInfo.swift */; };
 		3798D6B327794265008C25BF /* ModelInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3798D6B227794265008C25BF /* ModelInfo.swift */; };
 /* End PBXBuildFile section */
@@ -45,8 +44,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		370632F727750CBF0009565A /* PlaneInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaneInfo.swift; sourceTree = "<group>"; };
-		3711A139277A652900CDBC8E /* Christmas.rcproject */ = {isa = PBXFileReference; lastKnownFileType = file.rcproject; path = Christmas.rcproject; sourceTree = "<group>"; };
 		37477BB62774F4DE0057CEB0 /* placementTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = placementTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		37477BB92774F4DE0057CEB0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		37477BBB2774F4DE0057CEB0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -58,12 +55,13 @@
 		37477BD62774F4E00057CEB0 /* placementTestUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = placementTestUITests.swift; sourceTree = "<group>"; };
 		37477BD82774F4E00057CEB0 /* placementTestUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = placementTestUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		37477BE52774F53A0057CEB0 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
-		37477BE82774F5B40057CEB0 /* fender_stratocaster.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = fender_stratocaster.usdz; sourceTree = "<group>"; };
-		37477BE92774F5B40057CEB0 /* toy_drummer.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = toy_drummer.usdz; sourceTree = "<group>"; };
 		37477BEA2774F5B40057CEB0 /* condo.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = condo.usdz; sourceTree = "<group>"; };
-		37477BEB2774F5B40057CEB0 /* toy_car.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = toy_car.usdz; sourceTree = "<group>"; };
-		37477BEC2774F5B40057CEB0 /* toy_robot_vintage.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = toy_robot_vintage.usdz; sourceTree = "<group>"; };
-		37477BED2774F5B40057CEB0 /* toy_biplane.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = toy_biplane.usdz; sourceTree = "<group>"; };
+		37533758277BDFEC001A7AB8 /* SceneInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneInfo.swift; sourceTree = "<group>"; };
+		3753375D277C06C3001A7AB8 /* BowlingScene.reality */ = {isa = PBXFileReference; lastKnownFileType = file; path = BowlingScene.reality; sourceTree = "<group>"; };
+		3753375F277C13BB001A7AB8 /* RandomExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomExample.swift; sourceTree = "<group>"; };
+		37533761277CDFCB001A7AB8 /* Christmas.reality */ = {isa = PBXFileReference; lastKnownFileType = file; path = Christmas.reality; sourceTree = "<group>"; };
+		37533763277CDFD6001A7AB8 /* Random.reality */ = {isa = PBXFileReference; lastKnownFileType = file; path = Random.reality; sourceTree = "<group>"; };
+		37533765277CF0F2001A7AB8 /* DetectedPlaneInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedPlaneInfo.swift; sourceTree = "<group>"; };
 		3798D6B027794166008C25BF /* EntryPointInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryPointInfo.swift; sourceTree = "<group>"; };
 		3798D6B227794265008C25BF /* ModelInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelInfo.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -116,16 +114,20 @@
 		37477BB82774F4DE0057CEB0 /* placementTest */ = {
 			isa = PBXGroup;
 			children = (
+				37533763277CDFD6001A7AB8 /* Random.reality */,
+				37533761277CDFCB001A7AB8 /* Christmas.reality */,
+				3753375D277C06C3001A7AB8 /* BowlingScene.reality */,
 				37477BE72774F5570057CEB0 /* models */,
 				37477BB92774F4DE0057CEB0 /* AppDelegate.swift */,
 				37477BBB2774F4DE0057CEB0 /* ContentView.swift */,
+				3753375F277C13BB001A7AB8 /* RandomExample.swift */,
 				37477BBF2774F4E00057CEB0 /* Assets.xcassets */,
 				37477BC12774F4E00057CEB0 /* Preview Content */,
 				37477BE52774F53A0057CEB0 /* Model.swift */,
-				370632F727750CBF0009565A /* PlaneInfo.swift */,
 				3798D6B027794166008C25BF /* EntryPointInfo.swift */,
 				3798D6B227794265008C25BF /* ModelInfo.swift */,
-				3711A139277A652900CDBC8E /* Christmas.rcproject */,
+				37533758277BDFEC001A7AB8 /* SceneInfo.swift */,
+				37533765277CF0F2001A7AB8 /* DetectedPlaneInfo.swift */,
 			);
 			path = placementTest;
 			sourceTree = "<group>";
@@ -159,11 +161,6 @@
 			isa = PBXGroup;
 			children = (
 				37477BEA2774F5B40057CEB0 /* condo.usdz */,
-				37477BE82774F5B40057CEB0 /* fender_stratocaster.usdz */,
-				37477BED2774F5B40057CEB0 /* toy_biplane.usdz */,
-				37477BEB2774F5B40057CEB0 /* toy_car.usdz */,
-				37477BE92774F5B40057CEB0 /* toy_drummer.usdz */,
-				37477BEC2774F5B40057CEB0 /* toy_robot_vintage.usdz */,
 			);
 			path = models;
 			sourceTree = "<group>";
@@ -273,13 +270,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				37477BC32774F4E00057CEB0 /* Preview Assets.xcassets in Resources */,
+				37533762277CDFCB001A7AB8 /* Christmas.reality in Resources */,
 				37477BC02774F4E00057CEB0 /* Assets.xcassets in Resources */,
-				37477BF32774F5B40057CEB0 /* toy_biplane.usdz in Resources */,
-				37477BEE2774F5B40057CEB0 /* fender_stratocaster.usdz in Resources */,
-				37477BEF2774F5B40057CEB0 /* toy_drummer.usdz in Resources */,
 				37477BF02774F5B40057CEB0 /* condo.usdz in Resources */,
-				37477BF12774F5B40057CEB0 /* toy_car.usdz in Resources */,
-				37477BF22774F5B40057CEB0 /* toy_robot_vintage.usdz in Resources */,
+				3753375E277C06C3001A7AB8 /* BowlingScene.reality in Resources */,
+				37533764277CDFD6001A7AB8 /* Random.reality in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -304,13 +299,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3711A13C277A7F0900CDBC8E /* Christmas.rcproject in Sources */,
 				37477BBC2774F4DE0057CEB0 /* ContentView.swift in Sources */,
+				37533759277BDFEC001A7AB8 /* SceneInfo.swift in Sources */,
+				37533766277CF0F2001A7AB8 /* DetectedPlaneInfo.swift in Sources */,
 				3798D6B127794166008C25BF /* EntryPointInfo.swift in Sources */,
 				37477BBA2774F4DE0057CEB0 /* AppDelegate.swift in Sources */,
 				3798D6B327794265008C25BF /* ModelInfo.swift in Sources */,
+				37533760277C13BB001A7AB8 /* RandomExample.swift in Sources */,
 				37477BE62774F53A0057CEB0 /* Model.swift in Sources */,
-				370632F827750CBF0009565A /* PlaneInfo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
