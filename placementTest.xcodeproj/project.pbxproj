@@ -22,6 +22,7 @@
 		37533762277CDFCB001A7AB8 /* Christmas.reality in Resources */ = {isa = PBXBuildFile; fileRef = 37533761277CDFCB001A7AB8 /* Christmas.reality */; };
 		37533764277CDFD6001A7AB8 /* Random.reality in Resources */ = {isa = PBXBuildFile; fileRef = 37533763277CDFD6001A7AB8 /* Random.reality */; };
 		37533766277CF0F2001A7AB8 /* DetectedPlaneInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37533765277CF0F2001A7AB8 /* DetectedPlaneInfo.swift */; };
+		37533768277D461E001A7AB8 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 37533767277D461E001A7AB8 /* .gitignore */; };
 		3798D6B127794166008C25BF /* EntryPointInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3798D6B027794166008C25BF /* EntryPointInfo.swift */; };
 		3798D6B327794265008C25BF /* ModelInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3798D6B227794265008C25BF /* ModelInfo.swift */; };
 /* End PBXBuildFile section */
@@ -62,6 +63,7 @@
 		37533761277CDFCB001A7AB8 /* Christmas.reality */ = {isa = PBXFileReference; lastKnownFileType = file; path = Christmas.reality; sourceTree = "<group>"; };
 		37533763277CDFD6001A7AB8 /* Random.reality */ = {isa = PBXFileReference; lastKnownFileType = file; path = Random.reality; sourceTree = "<group>"; };
 		37533765277CF0F2001A7AB8 /* DetectedPlaneInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedPlaneInfo.swift; sourceTree = "<group>"; };
+		37533767277D461E001A7AB8 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		3798D6B027794166008C25BF /* EntryPointInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryPointInfo.swift; sourceTree = "<group>"; };
 		3798D6B227794265008C25BF /* ModelInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelInfo.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -94,6 +96,7 @@
 		37477BAD2774F4DE0057CEB0 = {
 			isa = PBXGroup;
 			children = (
+				37533767277D461E001A7AB8 /* .gitignore */,
 				37477BB82774F4DE0057CEB0 /* placementTest */,
 				37477BCB2774F4E00057CEB0 /* placementTestTests */,
 				37477BD52774F4E00057CEB0 /* placementTestUITests */,
@@ -270,6 +273,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				37477BC32774F4E00057CEB0 /* Preview Assets.xcassets in Resources */,
+				37533768277D461E001A7AB8 /* .gitignore in Resources */,
 				37533762277CDFCB001A7AB8 /* Christmas.reality in Resources */,
 				37477BC02774F4E00057CEB0 /* Assets.xcassets in Resources */,
 				37477BF02774F5B40057CEB0 /* condo.usdz in Resources */,
